@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <!-- Mailchimp -->
+        <menuitem id="menu_mailchimp_root"
+            parent="base.menu_config"
+            name="Mailchimp"/>
+            <menuitem id="menu_mailchimp"
+                parent="menu_mailchimp_root"
+                action="action_mailchimp"
+                name="Mailchimp"/>
+            <menuitem id="menu_mailchimp_list"
+                parent="menu_mailchimp_root"
+                action="action_mailchimp_list"
+                name="Mailchimp list"/>
+
+
+    </data>
+</openerp>
