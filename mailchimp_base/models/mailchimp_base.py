@@ -119,3 +119,12 @@ class MailchimpConfig(models.Model):
             raise exceptions.Warning(
                 _('The connection was made successfully.'))
         return True
+
+    @api.model
+    def create(self, data):
+        # Comprobar que solo hay un registro de configuracion de mailchimp
+        if len(self.env['mailchimp.config'].search([])) >= 1:
+            raise exceptions.Warning(
+                _('There can be only one configuration of Mailchimp in the '
+                    'system.'))
+        return super(MailchimpConfig, self).create(data)

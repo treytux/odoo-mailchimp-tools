@@ -9,11 +9,5 @@
                 parent="menu_mailchimp_root"
                 action="action_mailchimp_config"
                 name="Mailchimp configuration"/>
-            <menuitem id="menu_mailchimp_list"
-                parent="menu_mailchimp_root"
-                action="action_mailchimp_list"
-                name="Mailchimp list"/>
-
-
     </data>
 </openerp>

@@ -1,57 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <openerp>
     <data>
-
-        <!-- mailchimp.list -->
-        <!-- mailchimp_list -->
-        <!-- Mailchimp List -->
-        <record id="tree_mailchimp_list" model="ir.ui.view">
-            <field name="name">mailchimp.list.tree</field>
-            <field name="model">mailchimp.list</field>
-            <field name="arch" type="xml">
-                <tree string="Mailchimp List">
-                    <field name="name"/>
-                </tree>
-            </field>
-        </record>
-
-        <record id="search_mailchimp_list" model="ir.ui.view">
-            <field name="name">mailchimp.list.search</field>
-            <field name="model">mailchimp.list</field>
-            <field name="arch" type="xml">
-                <search string="Mailchimp List">
-                    <field name="name"/>
-                    <newline />
-                    <group expand="0" string="Group By...">
-                        <filter string="Nombre" domain="[]" context="{'group_by':'name'}" />
-                    </group>
-                </search>
-            </field>
-        </record>
-
-        <record id="form_mailchimp_list" model="ir.ui.view">
-            <field name="name">mailchimp.list.form</field>
-            <field name="model">mailchimp.list</field>
-            <field name="arch" type="xml">
-                <form string="Mailchimp List">
-                    <group colspan="4">
-                        <group>
-                            <field name="name"/>
-                        </group>
-                    </group>
-                </form>
-            </field>
-        </record>
-
-        <record id="action_mailchimp_list" model="ir.actions.act_window">
-            <field name="name">Mailchimp List</field>
-            <field name="type">ir.actions.act_window</field>
-            <field name="res_model">mailchimp.list</field>
-            <field name="view_type">form</field>
-            <field name="view_mode">tree,form</field>
-            <field name="search_view_id" ref="search_mailchimp_list"/>
-        </record>
-
         <!-- mailchimp.config -->
         <!-- mailchimp.config -->
         <!-- Mailchimp configuration-->
@@ -100,6 +49,9 @@
                         </group>
                         <group col="4" colspan="4">
                             <button name="test_connect" string="Test connection" type="object" icon="gtk-network" colspan="2"/>
+                        </group>
+                        <group col="4" colspan="4">
+                            <separator string="Configuring export" colspan="6"/>
                         </group>
                     </group>
                 </form>

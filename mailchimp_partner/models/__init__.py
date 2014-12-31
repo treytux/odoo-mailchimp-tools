@@ -18,4 +18,5 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-from . import mailchimp_base
+from . import partner
+from . import mailchimp_configuration

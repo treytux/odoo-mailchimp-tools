@@ -18,4 +18,27 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-from . import mailchimp_base
+
+{
+    'name': 'Mailchimp partner',
+    'summary': 'Mailchimp partner',
+    'category': 'Management',
+    'version': '1.0',
+    'description': """
+Allows to export partners to Mailchimp list.
+From configuration you can select the partner types that you want export.
+    """,
+    'author': 'Trey Kilobytes de Soluciones (www.trey.es)',
+    'website': 'http://www.trey.es',
+    'depends': [
+        'base',
+        'mailchimp_base',
+    ],
+    'data': [
+        # @TODO security
+        'views/mailchimp_configuration.xml',
+    ],
+    'test': [
+    ],
+    'installable': True,
+}

@@ -18,4 +18,22 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-from . import mailchimp_base
+from openerp import models, fields, api, _, exceptions
+import mailchimp
+
+import logging
+_log = logging.getLogger(__name__)
+
+
+class MailchimpConfig(models.Model):
+    _inherit = 'mailchimp.config'
+
+    customers = fields.Boolean(
+        string='Customers')
+    customer_contacts = fields.Boolean(
+        string='Customer contacts')
+    suppliers = fields.Boolean(
+        string='Suppliers')
+    supplier_contacts = fields.Boolean(
+        string='Supplier contacts')
+

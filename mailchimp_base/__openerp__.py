@@ -36,7 +36,7 @@ Need install mailchimp module:
         'base',
     ],
     'data': [
-        # security
+        # @TODO security
 
         'wizards/mailchimp_change_list.xml',
         'views/mailchimp_base.xml',
