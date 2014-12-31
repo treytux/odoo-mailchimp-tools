@@ -27,7 +27,7 @@
         <!-- @TODO Ocultar wiz de boton Mas, se llamara desde boton 'Change list' -->
         <act_window id="action_mailchimp_change_list"
             name="mailchimp_change_list"
-            src_model="mailchimp"
+            src_model="mailchimp.config"
             res_model="mailchimp.change.list"
             view_mode="form"
             target="new"

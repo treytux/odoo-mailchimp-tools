@@ -32,13 +32,13 @@ class MailchimpList(models.Model):
     name = fields.Char(string='Name')
 
 
-class Mailchimp(models.Model):
-    _name = 'mailchimp'
-    _description = 'Mailchimp'
+class MailchimpConfig(models.Model):
+    _name = 'mailchimp.config'
+    _description = 'Mailchimp configuration'
 
     name = fields.Char(string='Name')
     mapi = fields.Char(string='API', required=True)
-    subscription_list = fields.Char(string='Subscription List', required=True)
+    subscription_list = fields.Char(string='Subscription List')
 
     # Abre el asitente para seleccionar una de las listas de suscripcion
     # disponibles
@@ -63,7 +63,7 @@ class Mailchimp(models.Model):
     # Obtener la lista de subscriptores de la configuracion
     def get_subscription_list_id(self, mapi):
         # Comprobar si hay algun registro
-        mailchimps = self.env['mailchimp'].search([])
+        mailchimps = self.env['mailchimp.config'].search([])
 
         if len(mailchimps) > 0:
             subscription_list_name = mailchimps[0].subscription_list
@@ -92,24 +92,23 @@ class Mailchimp(models.Model):
                 'You must define a configuration for your Mailchimp account.'))
 
     # Comprueba si conecta o no
+    @api.one
     def is_connected(self):
-        _log.info('='*100)
-        _log.info('self: %s' % self)
-        _log.info('self.mapi: %s' % self.mapi)
         # Conectar
         mapi = mailchimp.Mailchimp(self.mapi)
-        _log.info('mapi: %s' % mapi)
 
         # Siempre conecta, pero para saber si los datos de la API o la lista de
-        # suscripcion son correctos, necesitamos ejecutar las siguientes
-        # funciones
+        # suscripcion son correctos, necesitamos hacer las siguientes
+        # comprobaciones
         try:
             # Obtener las listas de subscripcion
             mapi.lists.list()
             # Obtener las lista de subscripcion definida en la configuracion
             self.get_subscription_list_id(mapi)
         except:
-            raise exceptions.Warning(_('Data error Mailchimp connection.'))
+            raise exceptions.Warning(
+                _('Data error Mailchimp connection, review the '
+                  'Mailchimp/Configuration menu.'))
 
         return True
 
@@ -117,7 +116,6 @@ class Mailchimp(models.Model):
     def test_connect(self):
         res = self.is_connected()
         if res:
-            raise exceptions.Warning(_('The connection was made successfully.'))
+            raise exceptions.Warning(
+                _('The connection was made successfully.'))
         return True
-
-

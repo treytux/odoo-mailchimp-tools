@@ -39,7 +39,7 @@ class MailchimpChangeList(models.TransientModel):
     # Cargar listas de suscripcion disponibles
     def action_get_lists(self):
         # Buscar config mailchimp
-        mailchimps = self.env['mailchimp'].search([])
+        mailchimps = self.env['mailchimp.config'].search([])
         if mailchimps:
             # Siempre conecta, pero para saber si los datos de la API o la
             # lista de suscripcion son correctos, necesitamos ejecutar las
@@ -78,9 +78,9 @@ class MailchimpChangeList(models.TransientModel):
     @api.one
     def button_accept(self):
         # Buscar config mailchimp
-        mailchimps = self.env['mailchimp'].search([])
+        mailchimps = self.env['mailchimp.config'].search([])
         if mailchimps:
-            record = self.env['mailchimp'].browse(mailchimps[0].id)
+            record = self.env['mailchimp.config'].browse(mailchimps[0].id)
             record.write({'subscription_list': self.subscription_list_id.name})
         else:
             raise exceptions.Warning(_(

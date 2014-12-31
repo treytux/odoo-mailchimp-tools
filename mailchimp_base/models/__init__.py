@@ -18,31 +18,5 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-
-{
-    'name': 'Mailchimp',
-    'summary': 'Mailchimp connect',
-    'category': 'Management',
-    'version': '1.0',
-    'description': """
-Connect with MailChimp account and performs several operations.
-
-Need install mailchimp module:
-    pip install mailchimp
-    """,
-    'author': 'Trey Kilobytes de Soluciones (www.trey.es)',
-    'website': 'http://www.trey.es',
-    'depends': [
-        'base',
-    ],
-    'data': [
-        # security
-
-        'wizards/mailchimp_change_list.xml',
-        'views/mailchimp.xml',
-        'views/menu.xml'
-    ],
-    'test': [
-    ],
-    'installable': True,
-}
+from . import mailchimp_base
+from . import partner

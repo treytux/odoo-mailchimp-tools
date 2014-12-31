@@ -52,14 +52,14 @@
             <field name="search_view_id" ref="search_mailchimp_list"/>
         </record>
 
-        <!-- mailchimp -->
-        <!-- mailchimp -->
-        <!-- Mailchimp -->
-        <record id="tree_mailchimp" model="ir.ui.view">
-            <field name="name">mailchimp.tree</field>
-            <field name="model">mailchimp</field>
+        <!-- mailchimp.config -->
+        <!-- mailchimp.config -->
+        <!-- Mailchimp configuration-->
+        <record id="tree_mailchimp_config" model="ir.ui.view">
+            <field name="name">mailchimp.config.tree</field>
+            <field name="model">mailchimp.config</field>
             <field name="arch" type="xml">
-                <tree string="Mailchimp">
+                <tree string="Mailchimp configuration">
                     <field name="name"/>
                     <field name="mapi"/>
                     <field name="subscription_list"/>
@@ -67,11 +67,11 @@
             </field>
         </record>
 
-        <record id="search_mailchimp" model="ir.ui.view">
-            <field name="name">mailchimp.search</field>
-            <field name="model">mailchimp</field>
+        <record id="search_mailchimp_config" model="ir.ui.view">
+            <field name="name">mailchimp.config.search</field>
+            <field name="model">mailchimp.config</field>
             <field name="arch" type="xml">
-                <search string="Mailchimp">
+                <search string="Mailchimp configuration">
                     <field name="name"/>
                     <field name="mapi"/>
                     <field name="subscription_list"/>
@@ -83,11 +83,11 @@
             </field>
         </record>
 
-        <record id="form_mailchimp" model="ir.ui.view">
-            <field name="name">mailchimp.form</field>
-            <field name="model">mailchimp</field>
+        <record id="form_mailchimp_config" model="ir.ui.view">
+            <field name="name">mailchimp.config.form</field>
+            <field name="model">mailchimp.config</field>
             <field name="arch" type="xml">
-                <form string="Mailchimp">
+                <form string="Mailchimp configuration">
                     <group col="4" colspan="4">
                         <group col="4" colspan="4">
                             <field name="name"/>
@@ -106,13 +106,13 @@
             </field>
         </record>
 
-        <record id="action_mailchimp" model="ir.actions.act_window">
+        <record id="action_mailchimp_config" model="ir.actions.act_window">
             <field name="name">Mailchimp</field>
             <field name="type">ir.actions.act_window</field>
-            <field name="res_model">mailchimp</field>
+            <field name="res_model">mailchimp.config</field>
             <field name="view_type">form</field>
             <field name="view_mode">tree,form</field>
-            <field name="search_view_id" ref="search_mailchimp"/>
+            <field name="search_view_id" ref="search_mailchimp_config"/>
         </record>
 
     </data>
