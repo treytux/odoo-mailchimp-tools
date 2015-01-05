@@ -19,75 +19,135 @@
 #
 ###############################################################################
 from openerp import models, fields, api
+import mailchimp
+
+import logging
+_log = logging.getLogger(__name__)
 
 
-# class Partner(models.Model):
-#     _inherit = 'res.partner'
+class Partner(models.Model):
+    _inherit = 'res.partner'
 
-#     @api.model
-#     def create(self, data):
-#         partner_id = super(Partner, self).create(data)
+    @api.model
+    def create(self, data):
+        partner_id = super(Partner, self).create(data)
 
-#         #####
-#         #
-#         #####
-#         # Comprobar si es cliente (o contacto) y esta activo
+        # Comprobar si existe configuracion para mailchimp,
+        mailchimp_configs = self.env['mailchimp.config'].search([])
+        if not mailchimp_configs:
+            _log.warning('Not exists configuration of Mailchimp in the system.'
+                         'Make sure you have saved the settings.')
+        else:
+            # @ TODO Comprobar la configuracion de los datos a exportar
+            # export = False
+            # if 'email' in data:
+            #     if 'customer' in data and mailchimp_configs[0].customers:
+            #         if ''
+            #         export = True
+            #     if 'supplier' in data and mailchimp_configs[0].suppliers:
+            #         export = True
 
-#         # Si tiene relleno el campo email, comprobar si ya existe en la lista
-#         # de mailchimp.
+            ### @TODO Por ahora exportar solo los clientes (sean o no empresa)
+            if data.get('email') and\
+               'customer' in data and data['customer'] is True:
 
-#         # Si existe, actualizar campos del suscriptor
-#         # Si no existe, crear suscriptor
-#         if 'email' in data:
-#         #     picking_obj = self.env['stock.picking']
-#         #     picking = picking_obj.browse(data['picking_id'])
-#         #     picking._calc_breakdown_taxes()
-#         # return partner_id
+                # Conectar con MailChimp
+                mapi = mailchimp.Mailchimp(mailchimp_configs[0].mapi)
+
+                # Datos para crear el suscriptor
+                data_email = {
+                    'email': data['email'],
+                }
+                vals = {
+                    'fname': data.get('name', ''),
+                    # @TODO
+                    # Cambiar porque no hay campo especifico para el apellido
+                    'apellidos': data.get('name', ''),
+                }
+                # Obtener la lista
+                list_id = self.env['mailchimp.config'].getListId(
+                    mapi,
+                    mailchimp_configs[0].subscription_list)
+
+                # Crear el suscriptor
+                self.env['mailchimp.config'].createSubscriptor(
+                    mapi,
+                    list_id,
+                    data_email,
+                    vals)
+            else:
+                _log.error('The customer has no email address associated, it '
+                           'is omitted.')
+
+        return partner_id
+
+    @api.multi
+    def write(self, vals):
+        # Comprobar si existe configuracion para mailchimp,
+        mailchimp_configs = self.env['mailchimp.config'].search([])
+        if not mailchimp_configs:
+            _log.warning('Not exists configuration of Mailchimp in the system.'
+                         'Make sure you have saved the settings.')
+        else:
+            # Conectar con MailChimp
+            mapi = mailchimp.Mailchimp(mailchimp_configs[0].mapi)
+
+            # Email antiguo
+            data_email = {
+                'email': self.email,
+            }
+            # Datos modificados
+            data_updated = {
+                'fname': vals.get('name') or self.name,
+            }
+
+            # Si se modifica el correo, almacenamos el nuevo valor
+            if vals.get('email'):
+                data_updated.update({'new-email': vals.get('email')})
+
+            # Obtener la lista
+            list_id = self.env['mailchimp.config'].getListId(
+                mapi,
+                mailchimp_configs[0].subscription_list)
+
+            # Actualizar suscriptor
+            self.env['mailchimp.config'].updateSubscriptor(
+                mapi,
+                list_id,
+                data_email,
+                data_updated)
+
+        res = super(Partner, self).write(vals)
+        return res
+
+    @api.multi
+    def unlink(self):
+        # Comprobar si existe configuracion para mailchimp,
+        mailchimp_configs = self.env['mailchimp.config'].search([])
+        if not mailchimp_configs:
+            _log.warning('Not exists configuration of Mailchimp in the system.'
+                         'Make sure you have saved the settings.')
+        else:
+            # Conectar con MailChimp
+            mapi = mailchimp.Mailchimp(mailchimp_configs[0].mapi)
+
+            if self.email:
+                data_email = {
+                    'email': self.email,
+                }
+
+                # Obtener la lista
+                list_id = self.env['mailchimp.config'].getListId(
+                    mapi,
+                    mailchimp_configs[0].subscription_list)
+
+                # Eliminar suscriptor
+                self.env['mailchimp.config'].deleteSubscriptor(
+                    mapi,
+                    list_id,
+                    data_email)
+
+        return super(Partner, self).unlink()
 
 
-#         partner = self.pool.get('res.partner').browse(cr, uid, id, context=context)
-#         if partner.customer is True:
-#             ## Conectar con MailChimp
-#             mapi = self.pool.get('trey.mailchimp').connect(cr, uid)
-
-#             ## Crear subscriptor con los datos
-
-#             # Comprobar si el cliente tiene un contacto creado y este contiene un email. Si es asi, se dara de alta en MailChimp el cliente con ese correo
-#             # Leer el email del contacto
-#             contact_ids = self.pool.get('res.partner.contact').search(cr, uid, [('partner_id', '=', id)])
-#             if contact_ids != []:
-#                 contact = self.pool.get('res.partner.contact').browse(cr, uid, contact_ids[0], context=context)
-
-#                 email = contact.email or ''
-
-#                 if email != '':
-#                     data_subscribe = {
-#                         "email": email,
-#                     }
-
-#                     language = self.get_language_name(cr, uid, contact)
-#                     aniversary = format_mm_dd(contact.birthdate)
-#                     initdate = format_mm_dd_yyyy(partner.date)
-
-#                     # Las keys del diccionario son los nombres de los campos en MailChimp
-#                     # Para evitar errores fijarse en List Fileds and MERGE tags (del menu de COnfiguracion), no en los campos del formulario
-#                     merge_vars = {
-#                         "fname": contact.first_name or '',
-#                         "lname": contact.last_name or '',
-#                         "aniversary": aniversary or '',
-#                         "initdate": initdate or '',
-#                         "language": language,
-#                     }
-
-#                     ## Obtener el id de la lista
-#                     subscription_list_id = self.pool.get('trey.mailchimp').get_subscription_list_id(cr, uid, mapi)
-
-#                     ## Subcribir en esa lista
-#                     try:
-#                         # double_optin=False: para que no pida confirmacón al usuario para crear la subscripcion
-#                         mapi.lists.subscribe(subscription_list_id, data_subscribe, merge_vars, double_optin=False)
-#                     except mailchimp.ListAlreadySubscribedError:
-#                         raise osv.except_osv('Error', 'Ya existe otro suscriptor en esta lista con el mismo correo.')
-#                     except mailchimp.ListMergeFieldRequiredError:
-#                         raise osv.except_osv('Error', 'La direccion de correo no es valida.')
 

@@ -128,3 +128,84 @@ class MailchimpConfig(models.Model):
                 _('There can be only one configuration of Mailchimp in the '
                     'system.'))
         return super(MailchimpConfig, self).create(data)
+
+    ########################################################################
+    # Funciones necesarias para las operaciones con la API de Mailchimp
+    ########################################################################
+    # Obtener listas diponibles
+    def getLists(self, mapi):
+        return mapi.lists.list()
+
+    # Comprueba si la lista existe
+    def existsList(self, mapi, list_name):
+        for l in self.getLists(mapi)['data']:
+            if l['name'] == list_name:
+                return True
+        _log.error('The list does %s not exist.' % list_name)
+
+    # Devuelve el id de una lista
+    def getListId(self, mapi, list_name):
+        self.existsList(mapi, list_name)
+        for l in self.getLists(mapi)['data']:
+            if l['name'] == list_name:
+                return l['id']
+        return 0
+
+    # Crear un suscriptor en una lista
+    def createSubscriptor(self, mapi, list_id, data_email, vals):
+        # double_optin=False: para que no pida confirmacion al usuario para
+        # crear la subscripcion
+        try:
+            res = mapi.lists.subscribe(
+                list_id, data_email, vals, double_optin=False)
+            _log.info('%s subscribed to the list %s with values: %s' % (
+                data_email, list_id, vals))
+            return res
+        except mailchimp.ListAlreadySubscribedError:
+            raise exceptions.Warning(
+                _('Another subscriber already exists in this list with the '
+                  'same email.'))
+        except mailchimp.ListMergeFieldRequiredError:
+            raise exceptions.Warning(_('The email address is not valid.'))
+        else:
+            raise exceptions.Warning(_('Unknown error.'))
+
+    # Actualizar un suscriptor en una lista
+    def updateSubscriptor(self, mapi, list_id, data_email, vals):
+        # double_optin=False: para que no pida confirmacion al usuario para
+        # crear la subscripcion
+        try:
+            res = mapi.lists.subscribe(
+                list_id, data_email, vals, double_optin=False,
+                update_existing=True)
+            _log.info('%s updated to %s in the list: %s' % (
+                data_email, vals, list_id))
+            return res
+        except mailchimp.ListAlreadySubscribedError:
+            raise exceptions.Warning(
+                _('Another subscriber already exists in this list with the '
+                  'same email.'))
+        except mailchimp.ListMergeFieldRequiredError:
+            raise exceptions.Warning(_('The email address is not valid.'))
+        else:
+            raise exceptions.Warning(_('Unknown error.'))
+
+    # Eliminar un suscriptor en una lista
+    def deleteSubscriptor(self, mapi, list_id, data_email):
+        # delete_member=True Para que lo elimine
+        # send_goodbye=False Para que no envie correo de despedida
+        # send_notify=False Para que no envie correo de notificacion
+        try:
+            res = mapi.lists.unsubscribe(
+                list_id, data_email, delete_member=True, send_goodbye=False,
+                send_notify=False)
+            _log.info('%s deleted in the list %s' % (data_email, list_id))
+            return res
+        except mailchimp.EmailNotExistsError:
+            # raise exceptions.Warning(
+            #     _('The email %s is not suscribed in the list, it can not '
+            #       'eliminated.' % data_email))
+            _log.warn('The email %s is not suscribed in the list, it can not '
+                      'eliminated.' % data_email)
+        else:
+            raise exceptions.Warning(_('Unknown error.'))

@@ -56,8 +56,6 @@ class MailchimpChangeList(models.TransientModel):
 
                 # Obtener las listas de subscripcion
                 lists = mapi.lists.list()
-                _log.info('.'*100)
-                _log.info('lists: %s' % lists)
 
                 # Crear registros de listas
                 for l in lists['data']:
