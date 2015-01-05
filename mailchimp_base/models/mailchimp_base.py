@@ -32,6 +32,18 @@ class MailchimpList(models.Model):
     name = fields.Char(string='Name')
 
 
+class MailchimpMapLine(models.Model):
+    _name = 'mailchimp.map.line'
+    _description = 'Mailchimp map line'
+
+    name = fields.Char(string='Name')
+    config_id = fields.Many2one(
+        comodel_name='mailchimp.config',
+        string='Configuration')
+    field_odoo = fields.Char(string='Field Odoo')
+    field_mailchimp = fields.Char(string='Field MailChimp')
+
+
 class MailchimpConfig(models.Model):
     _name = 'mailchimp.config'
     _description = 'Mailchimp configuration'
@@ -39,14 +51,18 @@ class MailchimpConfig(models.Model):
     name = fields.Char(string='Name')
     mapi = fields.Char(string='API', required=True)
     subscription_list = fields.Char(string='Subscription List')
+    map_line_ids = fields.One2many(
+        comodel_name='mailchimp.map.line',
+        inverse_name='config_id',
+        string='Map lines')
 
     # Abre el asitente para seleccionar una de las listas de suscripcion
     # disponibles
     @api.multi
-    def button_change_list(self):
+    def buttonChangeList(self):
         cr, uid, context = self.env.args
         change_list = self.env['mailchimp.change.list'].create({})
-        self.env['mailchimp.change.list'].action_get_lists()
+        self.env['mailchimp.change.list'].actionGetLists()
 
         return {
             'name': 'Subscription lists',
@@ -61,7 +77,7 @@ class MailchimpConfig(models.Model):
         }
 
     # Obtener la lista de subscriptores de la configuracion
-    def get_subscription_list_id(self, mapi):
+    def getSubscriptionListId(self, mapi):
         # Comprobar si hay algun registro
         mailchimps = self.env['mailchimp.config'].search([])
 
@@ -93,7 +109,7 @@ class MailchimpConfig(models.Model):
 
     # Comprueba si conecta o no
     @api.one
-    def is_connected(self):
+    def isConnected(self):
         # Conectar
         mapi = mailchimp.Mailchimp(self.mapi)
 
@@ -104,7 +120,7 @@ class MailchimpConfig(models.Model):
             # Obtener las listas de subscripcion
             mapi.lists.list()
             # Obtener las lista de subscripcion definida en la configuracion
-            self.get_subscription_list_id(mapi)
+            self.getSubscriptionListId(mapi)
         except:
             raise exceptions.Warning(
                 _('Data error Mailchimp connection, review the '
@@ -113,8 +129,8 @@ class MailchimpConfig(models.Model):
         return True
 
     @api.one
-    def test_connect(self):
-        res = self.is_connected()
+    def testConnect(self):
+        res = self.isConnected()
         if res:
             raise exceptions.Warning(
                 _('The connection was made successfully.'))

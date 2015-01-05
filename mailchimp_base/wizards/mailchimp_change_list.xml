@@ -15,7 +15,7 @@
                         <field name="subscription_list_id" widget="selection"/>
                     </group>
                     <footer>
-                        <button name="button_accept" class="oe_highlight"
+                        <button name="buttonAccept" class="oe_highlight"
                             type="object" string="Accept" />
                         or
                         <button class="oe_link" special="cancel" string="Cancel" />

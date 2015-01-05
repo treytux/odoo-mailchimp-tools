@@ -37,7 +37,7 @@ class MailchimpChangeList(models.TransientModel):
         help="Available lists MailChimp API.")
 
     # Cargar listas de suscripcion disponibles
-    def action_get_lists(self):
+    def actionGetLists(self):
         # Buscar config mailchimp
         mailchimps = self.env['mailchimp.config'].search([])
         if mailchimps:
@@ -74,7 +74,7 @@ class MailchimpChangeList(models.TransientModel):
     # Escribir la lista seleccionada en el campo lista de suscripcion de la
     # configuracion
     @api.one
-    def button_accept(self):
+    def buttonAccept(self):
         # Buscar config mailchimp
         mailchimps = self.env['mailchimp.config'].search([])
         if mailchimps:

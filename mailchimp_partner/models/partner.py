@@ -38,7 +38,7 @@ class Partner(models.Model):
             _log.warning('Not exists configuration of Mailchimp in the system.'
                          'Make sure you have saved the settings.')
         else:
-            # @ TODO Comprobar la configuracion de los datos a exportar
+            # @TODO Comprobar la configuracion de los datos a exportar
             # export = False
             # if 'email' in data:
             #     if 'customer' in data and mailchimp_configs[0].customers:
@@ -58,12 +58,13 @@ class Partner(models.Model):
                 data_email = {
                     'email': data['email'],
                 }
-                vals = {
-                    'fname': data.get('name', ''),
-                    # @TODO
-                    # Cambiar porque no hay campo especifico para el apellido
-                    'apellidos': data.get('name', ''),
-                }
+
+                # Obtener los valores de las lineas de mapeo de la config
+                vals = {}
+                for map_line in mailchimp_configs.map_line_ids:
+                    vals[map_line.field_mailchimp] = data.get(
+                        map_line.field_odoo, '')
+
                 # Obtener la lista
                 list_id = self.env['mailchimp.config'].getListId(
                     mapi,
@@ -96,10 +97,24 @@ class Partner(models.Model):
             data_email = {
                 'email': self.email,
             }
-            # Datos modificados
-            data_updated = {
-                'fname': vals.get('name') or self.name,
-            }
+            # # Datos modificados
+            # data_updated = {
+            #     'fname': vals.get('name') or self.name,
+            # }
+            # Obtener los valores modificados de las lineas de mapeo de la
+            # configuracion
+            data_updated = {}
+            for map_line in mailchimp_configs.map_line_ids:
+
+                # @TODO
+                # Como obtengo self.name (en general self.<field_odoo>)
+                # para asignar el valor antiguo si no viene el nuevo??
+                # Si no hago eso, se borraran los valores que no haya
+                # modificado esta vez
+                # 'fname': vals.get('name') or self.name,
+                data_updated[map_line.field_mailchimp] = vals.get(
+                    map_line.field_odoo, '') ## or eval(self.vals.get(map_line.field_odoo, ''))
+
 
             # Si se modifica el correo, almacenamos el nuevo valor
             if vals.get('email'):
