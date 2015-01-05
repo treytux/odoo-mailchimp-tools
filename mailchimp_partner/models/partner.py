@@ -28,9 +28,36 @@ _log = logging.getLogger(__name__)
 class Partner(models.Model):
     _inherit = 'res.partner'
 
+    # Comprueba si hay que exportar los datos del partner basandose en los
+    # datos de configuracion
+    def checkExportData(self, mailchimp_config, partner):
+        export = False
+
+        # Customers: customer and is_company
+        if mailchimp_config.customers is True and partner.customer is True \
+           and partner.is_company is True:
+            export = True
+
+        # Suppliers: suppliers and is_company
+        if mailchimp_config.suppliers is True and partner.supplier is True \
+           and partner.is_company is True:
+            export = True
+
+        # Customer contacts: customer and not is_company
+        if mailchimp_config.customer_contacts is True \
+           and partner.customer is True and partner.is_company is False:
+            export = True
+
+        # Supplier contacts: supplier and not is_company
+        if mailchimp_config.supplier_contacts is True \
+           and partner.supplier is True and partner.is_company is False:
+            export = True
+
+        return export
+
     @api.model
     def create(self, data):
-        partner_id = super(Partner, self).create(data)
+        partner = super(Partner, self).create(data)
 
         # Comprobar si existe configuracion para mailchimp,
         mailchimp_configs = self.env['mailchimp.config'].search([])
@@ -38,53 +65,43 @@ class Partner(models.Model):
             _log.warning('Not exists configuration of Mailchimp in the system.'
                          'Make sure you have saved the settings.')
         else:
-            # @TODO Comprobar la configuracion de los datos a exportar
-            # export = False
-            # if 'email' in data:
-            #     if 'customer' in data and mailchimp_configs[0].customers:
-            #         if ''
-            #         export = True
-            #     if 'supplier' in data and mailchimp_configs[0].suppliers:
-            #         export = True
-
-            ### @TODO Por ahora exportar solo los clientes (sean o no empresa)
-            if data.get('email') and\
-               'customer' in data and data['customer'] is True:
-
+            if data.get('email'):
                 # Conectar con MailChimp
                 mapi = mailchimp.Mailchimp(mailchimp_configs[0].mapi)
 
-                # Datos para crear el suscriptor
-                data_email = {
-                    'email': data['email'],
-                }
+                # Comprobar si hay que exportar los datos
+                if self.checkExportData(mailchimp_configs[0], partner):
+                    # Datos para crear el suscriptor
+                    data_email = {
+                        'email': data['email'],
+                    }
 
-                # Obtener los valores de las lineas de mapeo de la config
-                vals = {}
-                for map_line in mailchimp_configs.map_line_ids:
-                    vals[map_line.field_mailchimp] = data.get(
-                        map_line.field_odoo, '')
+                    # Obtener los valores de las lineas de mapeo de la config
+                    vals = {}
+                    for map_line in mailchimp_configs.map_line_ids:
+                        vals[map_line.field_mailchimp] = data.get(
+                            map_line.field_odoo, '')
 
-                # Obtener la lista
-                list_id = self.env['mailchimp.config'].getListId(
-                    mapi,
-                    mailchimp_configs[0].subscription_list)
+                    # Obtener la lista
+                    list_id = self.env['mailchimp.config'].getListId(
+                        mapi,
+                        mailchimp_configs[0].subscription_list)
 
-                # Crear el suscriptor
-                self.env['mailchimp.config'].createSubscriptor(
-                    mapi,
-                    list_id,
-                    data_email,
-                    vals)
+                    # Crear el suscriptor
+                    self.env['mailchimp.config'].createSubscriptor(
+                        mapi,
+                        list_id,
+                        data_email,
+                        vals)
             else:
                 _log.error('The customer has no email address associated, it '
                            'is omitted.')
 
-        return partner_id
+        return partner
 
     @api.multi
     def write(self, vals):
-        # Comprobar si existe configuracion para mailchimp,
+        # Comprobar si existe configuracion para mailchimp
         mailchimp_configs = self.env['mailchimp.config'].search([])
         if not mailchimp_configs:
             _log.warning('Not exists configuration of Mailchimp in the system.'
@@ -93,45 +110,86 @@ class Partner(models.Model):
             # Conectar con MailChimp
             mapi = mailchimp.Mailchimp(mailchimp_configs[0].mapi)
 
-            # Email antiguo
-            data_email = {
-                'email': self.email,
-            }
-            # # Datos modificados
-            # data_updated = {
-            #     'fname': vals.get('name') or self.name,
-            # }
-            # Obtener los valores modificados de las lineas de mapeo de la
-            # configuracion
-            data_updated = {}
-            for map_line in mailchimp_configs.map_line_ids:
-
-                # @TODO
-                # Como obtengo self.name (en general self.<field_odoo>)
-                # para asignar el valor antiguo si no viene el nuevo??
-                # Si no hago eso, se borraran los valores que no haya
-                # modificado esta vez
-                # 'fname': vals.get('name') or self.name,
-                data_updated[map_line.field_mailchimp] = vals.get(
-                    map_line.field_odoo, '') ## or eval(self.vals.get(map_line.field_odoo, ''))
-
-
-            # Si se modifica el correo, almacenamos el nuevo valor
-            if vals.get('email'):
-                data_updated.update({'new-email': vals.get('email')})
-
             # Obtener la lista
             list_id = self.env['mailchimp.config'].getListId(
                 mapi,
                 mailchimp_configs[0].subscription_list)
 
-            # Actualizar suscriptor
-            self.env['mailchimp.config'].updateSubscriptor(
-                mapi,
-                list_id,
-                data_email,
-                data_updated)
+            # Comprobar si hay que exportar los datos
+            if self.checkExportData(mailchimp_configs[0], self):
 
+                # Si ya tenia asignado un correo, se actualiza el suscriptor
+                if self.email:
+                    # Email antiguo
+                    data_email = {
+                        'email': self.email,
+                    }
+                    # # Datos modificados
+                    # data_updated = {
+                    #     'fname': vals.get('name') or self.name,
+                    # }
+                    # Obtener los valores modificados de las lineas de mapeo de
+                    # la configuracion
+                    data_updated = {}
+                    for map_line in mailchimp_configs.map_line_ids:
+
+                        # @TODO
+                        # Como obtengo self.name (en general self.<field_odoo>)
+                        # para asignar el valor antiguo si no viene el nuevo??
+                        # Si no hago eso, se borraran los valores que no haya
+                        # modificado esta vez
+                        # 'fname': vals.get('name') or self.name,
+                        data_updated[map_line.field_mailchimp] = vals.get(
+                            map_line.field_odoo, '') ## or eval(self.vals.get(map_line.field_odoo, ''))
+
+                    # Si se modifica el correo, almacenamos el nuevo valor
+                    if vals.get('email'):
+                        data_updated.update({'new-email': vals.get('email')})
+
+                    # Actualizar suscriptor
+                    self.env['mailchimp.config'].updateSubscriptor(
+                        mapi,
+                        list_id,
+                        data_email,
+                        data_updated)
+
+                # Si no tenia asignado correo, hay que comprobar si ha
+                # insertado algun correo o no
+                else:
+
+                    # Si ha insertado correo, hay que crear el suscriptor
+                    if vals.get('email'):
+                        # Datos para crear el suscriptor
+                        data_email = {
+                            'email': vals.get('email'),
+                        }
+
+                        # Obtener los valores de las lineas de mapeo de la config
+                        vals = {}
+                        for map_line in mailchimp_configs.map_line_ids:
+                            vals[map_line.field_mailchimp] = vals.get(
+                                map_line.field_odoo, '')
+
+                        # Crear el suscriptor
+                        self.env['mailchimp.config'].createSubscriptor(
+                            mapi,
+                            list_id,
+                            data_email,
+                            vals)
+
+                    # Si elimina el correo sin sustituirlo, eliminar el
+                    # suscriptor en Mailchimp
+                    else:
+                        if self.email:
+                            data_email = {
+                                'email': self.email,
+                            }
+
+                            # Eliminar suscriptor
+                            self.env['mailchimp.config'].deleteSubscriptor(
+                                mapi,
+                                list_id,
+                                data_email)
         res = super(Partner, self).write(vals)
         return res
 
@@ -146,23 +204,22 @@ class Partner(models.Model):
             # Conectar con MailChimp
             mapi = mailchimp.Mailchimp(mailchimp_configs[0].mapi)
 
-            if self.email:
-                data_email = {
-                    'email': self.email,
-                }
+            # Comprobar si hay que exportar los datos
+            if self.checkExportData(mailchimp_configs[0], self):
+                if self.email:
+                    data_email = {
+                        'email': self.email,
+                    }
 
-                # Obtener la lista
-                list_id = self.env['mailchimp.config'].getListId(
-                    mapi,
-                    mailchimp_configs[0].subscription_list)
+                    # Obtener la lista
+                    list_id = self.env['mailchimp.config'].getListId(
+                        mapi,
+                        mailchimp_configs[0].subscription_list)
 
-                # Eliminar suscriptor
-                self.env['mailchimp.config'].deleteSubscriptor(
-                    mapi,
-                    list_id,
-                    data_email)
+                    # Eliminar suscriptor
+                    self.env['mailchimp.config'].deleteSubscriptor(
+                        mapi,
+                        list_id,
+                        data_email)
 
         return super(Partner, self).unlink()
-
-
-

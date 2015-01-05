@@ -56,7 +56,7 @@ class MailchimpConfig(models.Model):
         inverse_name='config_id',
         string='Map lines')
 
-    # Abre el asitente para seleccionar una de las listas de suscripcion
+    # Abre el asistente para seleccionar una de las listas de suscripcion
     # disponibles
     @api.multi
     def buttonChangeList(self):

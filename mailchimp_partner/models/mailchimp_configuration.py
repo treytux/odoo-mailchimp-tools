@@ -36,4 +36,3 @@ class MailchimpConfig(models.Model):
         string='Suppliers')
     supplier_contacts = fields.Boolean(
         string='Supplier contacts')
-
