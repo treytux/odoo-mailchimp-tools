@@ -35,7 +35,6 @@ From configuration you can select the partner types that you want export.
         'mailchimp_base',
     ],
     'data': [
-        # @TODO security
         'views/mailchimp_configuration.xml',
     ],
     'test': [
