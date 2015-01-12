@@ -39,18 +39,20 @@ class Partner(models.Model):
 
         mailch_obj = self.env['mailchimp.config']
         mailchimp_config = mailch_obj.getConfiguration()
+        if not mailchimp_config:
+            return partner
+        else:
+            # Comprobar si hay que exportar los datos
+            if mailch_obj.checkExportData(partner):
+                # Obtener los valores de las lineas de mapeo de la config
+                vals = {m.field_mailchimp: data.get(m.field_odoo, '')
+                        for m in mailchimp_config.map_line_ids}
 
-        # Comprobar si hay que exportar los datos
-        if mailch_obj.checkExportData(partner):
-            # Obtener los valores de las lineas de mapeo de la config
-            vals = {m.field_mailchimp: data.get(m.field_odoo, '')
-                    for m in mailchimp_config.map_line_ids}
+                # Crear el suscriptor
+                res = mailch_obj.createSubscriptor(data['email'], vals)
 
-            # Crear el suscriptor
-            res = mailch_obj.createSubscriptor(data['email'], vals)
-
-            # Guardar el id del registro creado en mailchimp
-            partner.mailchimp_id = res['leid']
+                # Guardar el id del registro creado en mailchimp
+                partner.mailchimp_id = res['leid']
         return partner
 
     @api.multi
@@ -64,44 +66,46 @@ class Partner(models.Model):
 
         mailch_obj = self.env['mailchimp.config']
         mailchimp_config = mailch_obj.getConfiguration()
+        if not mailchimp_config:
+            return res
+        else:
+            # Obtener los datos
+            data_updated = {
+                m.field_mailchimp: getattr(self, m.field_odoo)
+                for m in mailchimp_config.map_line_ids
+                if hasattr(self, m.field_odoo)}
 
-        # Obtener los datos
-        data_updated = {
-            m.field_mailchimp: getattr(self, m.field_odoo)
-            for m in mailchimp_config.map_line_ids
-            if hasattr(self, m.field_odoo)}
+            # Si estaba sincronizado con mailchimp y ahora borran el correo
+            # => ELIMINAR
+            if self.mailchimp_id and not mailch_obj.checkExportData(self):
+                # Eliminar suscriptor
+                mailch_obj.deleteSubscriptor(self.mailchimp_id)
+                # Borrar el id de mailchimp
+                self.write({'mailchimp_id': ''})
 
-        # Si estaba sincronizado con mailchimp y ahora borran el correo
-        # => ELIMINAR
-        if self.mailchimp_id and not mailch_obj.checkExportData(self):
-            # Eliminar suscriptor
-            mailch_obj.deleteSubscriptor(self.mailchimp_id)
-            # Borrar el id de mailchimp
-            self.write({'mailchimp_id': ''})
-
-        # Si NO estaba sincronizado y ahora añaden correo => CREAR
-        elif not self.mailchimp_id and mailch_obj.checkExportData(self):
-            # Crear suscriptor
-            d = mailch_obj.createSubscriptor(self.email, data_updated)
-            # Guardar el id de mailchimp
-            self.write({'mailchimp_id': d['leid']})
-
-        # Si estaba sincronizado y ahora cambian datos => ACTUALIZAR
-        elif self.mailchimp_id and mailch_obj.checkExportData(self):
-            # Si cambian el correo, lo añadimos a los datos a cambiar
-            if old_email != self.email:
-                data_updated['new-email'] = self.email
-
-            # Antes de actualizar, comprobamos que el suscriptor existe en
-            # mailchimp, es decir, que no lo hayan borrado desde alli, ya que
-            # si lo han borrado, habra que crearlo de nuevo.
-            if mailch_obj.existLeid(self.mailchimp_id):
-                # Actualizar suscriptor
-                mailch_obj.updateSubscriptor(self.mailchimp_id, data_updated)
-            else:
+            # Si NO estaba sincronizado y ahora añaden correo => CREAR
+            elif not self.mailchimp_id and mailch_obj.checkExportData(self):
                 # Crear suscriptor
-                mailch_obj.createSubscriptor(self.email, data_updated)
+                d = mailch_obj.createSubscriptor(self.email, data_updated)
+                # Guardar el id de mailchimp
+                self.write({'mailchimp_id': d['leid']})
 
+            # Si estaba sincronizado y ahora cambian datos => ACTUALIZAR
+            elif self.mailchimp_id and mailch_obj.checkExportData(self):
+                # Si cambian el correo, lo añadimos a los datos a cambiar
+                if old_email != self.email:
+                    data_updated['new-email'] = self.email
+
+                # Antes de actualizar, comprobamos que el suscriptor existe en
+                # mailchimp, es decir, que no lo hayan borrado desde alli, ya
+                # que si lo han borrado, habra que crearlo de nuevo.
+                if mailch_obj.existLeid(self.mailchimp_id):
+                    # Actualizar suscriptor
+                    mailch_obj.updateSubscriptor(
+                        self.mailchimp_id, data_updated)
+                else:
+                    # Crear suscriptor
+                    mailch_obj.createSubscriptor(self.email, data_updated)
         return res
 
     @api.multi

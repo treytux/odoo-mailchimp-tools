@@ -26,7 +26,8 @@
     'version': '1.0',
     'description': """
 Allows to export partners to Mailchimp list.
-From configuration you can select the partner types that you want export.
+You must fill configuration to select the partner types that you want export
+and the field mapping to export.
     """,
     'author': 'Trey Kilobytes de Soluciones (www.trey.es)',
     'website': 'http://www.trey.es',

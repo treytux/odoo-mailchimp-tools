@@ -54,7 +54,8 @@ class MailchimpConfig(models.Model):
     map_line_ids = fields.One2many(
         comodel_name='mailchimp.map.line',
         inverse_name='config_id',
-        string='Map lines')
+        string='Map lines',
+        required=True)
 
     # Abre el asistente para seleccionar una de las listas de suscripcion
     # disponibles
@@ -80,49 +81,43 @@ class MailchimpConfig(models.Model):
     def getSubscriptionListId(self, mapi):
         # Obtener configuracion
         mailchimp_config = self.getConfiguration()
-
-        if len(mailchimp_config) > 0:
-            subscription_list_name = mailchimp_config.subscription_list
-            try:
-                # Obtener las listas de subscripcion
-                lists = mapi.lists.list()
-            except:
-                raise exceptions.Warning(
-                    _('Data error Mailchimp connection, review the '
-                      'Mailchimp/Configuration menu.'))
-
-            # Inicializar por si no la encuentra
-            list_id = 0
-
-            for l in lists['data']:
-                if l['name'] == subscription_list_name:
-                    list_id = l['id']
-                    break
-            if list_id == 0:
-                raise exceptions.Warning(
-                    _('The list \'%s\' does not exist in Mailchimp.' %
-                        (subscription_list_name)))
-            return list_id
+        if not mailchimp_config:
+            raise exceptions.Warning(
+                _('You must define a configuration for your Mailchimp '
+                  'account.'))
         else:
-            raise exceptions.Warning(_(
-                'You must define a configuration for your Mailchimp account.'))
+            if len(mailchimp_config) > 0:
+                subscription_list_name = mailchimp_config.subscription_list
+                try:
+                    # Obtener las listas de subscripcion
+                    lists = mapi.lists.list()
+                except:
+                    raise exceptions.Warning(
+                        _('Data error Mailchimp connection, review the '
+                          'configuration in Configuration/Mailchimp/Mailchimp '
+                          'configuration menu.'))
+
+                # Inicializar por si no la encuentra
+                list_id = 0
+
+                for l in lists['data']:
+                    if l['name'] == subscription_list_name:
+                        list_id = l['id']
+                        break
+                if list_id == 0:
+                    raise exceptions.Warning(
+                        _('The list \'%s\' does not exist in Mailchimp.' %
+                            (subscription_list_name)))
+                return list_id
 
     # Comprueba si conecta o no
-    @api.one
+    @api.multi
     def isConnected(self):
         # Conectar
         mapi = self.connect()
 
-        # Siempre conecta, pero para saber si los datos de la API o la lista de
-        # suscripcion son correctos, necesitamos hacer las siguientes
-        # comprobaciones
-        try:
-            # Obtener las lista de subscripcion definida en la configuracion
-            self.getSubscriptionListId(mapi)
-        except:
-            raise exceptions.Warning(
-                _('Data error Mailchimp connection, review the '
-                  'Mailchimp/Configuration menu.'))
+        # Obtener las lista de subscripcion definida en la configuracion
+        self.getSubscriptionListId(mapi)
 
         return True
 
@@ -141,14 +136,63 @@ class MailchimpConfig(models.Model):
             raise exceptions.Warning(
                 _('There can be only one configuration of Mailchimp in the '
                     'system.'))
+
         return super(MailchimpConfig, self).create(data)
+
+    @api.multi
+    def write(self, vals):
+        res = super(MailchimpConfig, self).write(vals)
+        if not res:
+            return res
+
+        # Para evitar errores, comprobar que los datos de conexion son
+        # correctos antes de escribir (pero hay que comprobar los valores que
+        # acaban de introducir)
+
+        # Obtener el campo mapi de vals (por si lo han modificado) o de la
+        # configuracion que ya estaba almacenada
+        mapi_id = vals.get('mapi', self.mapi)
+        mapi = mailchimp.Mailchimp(mapi_id)
+
+        # Buscar lista subscripcion
+        try:
+            # Obtener las listas de subscripcion
+            lists = mapi.lists.list()
+        except:
+            raise exceptions.Warning(
+                _('Data error Mailchimp connection, review the '
+                  'configuration in Configuration/Mailchimp/Mailchimp '
+                  'configuration menu.'))
+
+        # Inicializar por si no la encuentra
+        list_id = 0
+        # Obtener el campo subscription_list de vals (por si lo han modificado)
+        # o de la configuracion que ya estaba almacenada
+        subscription_list_name = vals.get(
+            'subscription_list', self.subscription_list)
+
+        for l in lists['data']:
+            if l['name'] == subscription_list_name:
+                list_id = l['id']
+                break
+        if list_id == 0:
+            raise exceptions.Warning(
+                _('The list \'%s\' does not exist in Mailchimp.' %
+                    (subscription_list_name)))
+        return res
 
     ########################################################################
     # Funciones necesarias para las operaciones con la API de Mailchimp
     ########################################################################
     # Obtener listas diponibles
     def getLists(self, mapi):
-        return mapi.lists.list()
+        try:
+            return mapi.lists.list()
+        except:
+            raise exceptions.Warning(
+                _('Data error Mailchimp connection, review the '
+                  'configuration in Configuration/Mailchimp/Mailchimp '
+                  'configuration menu.'))
 
     # Comprueba si la lista existe
     def existsList(self, mapi, list_name):
@@ -171,20 +215,28 @@ class MailchimpConfig(models.Model):
         mailchimp_configs = self.env['mailchimp.config'].search([])
         if not mailchimp_configs:
             _log.warning(
-                _('Not exists configuration of Mailchimp in the system.'
+                _('Not exists configuration of Mailchimp in the system.\n'
                   'Make sure you have saved the settings.'))
+            return False
         return mailchimp_configs[0]
 
     # Conecta con MailChimp
     def connect(self):
-        try:
-            # Obtener configuracion
-            mailchimp_config = self.getConfiguration()
-            # Conectar
-            mapi = mailchimp.Mailchimp(mailchimp_config.mapi)
-        except:
-            raise exceptions.Warning(_('Connection error.'))
-        return mapi
+        # Obtener configuracion
+        mailchimp_config = self.getConfiguration()
+        if not mailchimp_config:
+            return False
+        else:
+            try:
+                # Conectar
+                mapi = mailchimp.Mailchimp(mailchimp_config.mapi)
+            except:
+                raise exceptions.Warning(
+                    _('Data error Mailchimp connection, review the '
+                      'configuration in Configuration/Mailchimp/Mailchimp '
+                      'configuration menu.'))
+
+            return mapi
 
     # Comprueba si hay que exportar los datos del partner basandose en los
     # datos de configuracion
@@ -195,28 +247,30 @@ class MailchimpConfig(models.Model):
 
         # Obtener configuracion
         mailchimp_config = self.getConfiguration()
+        if not mailchimp_config:
+            return False
+        else:
+            # Customers: customer and is_company
+            if mailchimp_config.customers is True \
+               and partner.customer is True and partner.is_company is True:
+                return True
 
-        # Customers: customer and is_company
-        if mailchimp_config.customers is True and partner.customer is True \
-           and partner.is_company is True:
-            return True
+            # Suppliers: suppliers and is_company
+            if mailchimp_config.suppliers is True \
+               and partner.supplier is True and partner.is_company is True:
+                return True
 
-        # Suppliers: suppliers and is_company
-        if mailchimp_config.suppliers is True and partner.supplier is True \
-           and partner.is_company is True:
-            return True
+            # Customer contacts: customer and not is_company
+            if mailchimp_config.customer_contacts is True \
+               and partner.customer is True and partner.is_company is False:
+                return True
 
-        # Customer contacts: customer and not is_company
-        if mailchimp_config.customer_contacts is True \
-           and partner.customer is True and partner.is_company is False:
-            return True
+            # Supplier contacts: supplier and not is_company
+            if mailchimp_config.supplier_contacts is True \
+               and partner.supplier is True and partner.is_company is False:
+                return True
 
-        # Supplier contacts: supplier and not is_company
-        if mailchimp_config.supplier_contacts is True \
-           and partner.supplier is True and partner.is_company is False:
-            return True
-
-        return False
+            return False
 
     # Comprueba si un id de mailchimp (leid) esta dado de alta en una lista
     def existLeid(self, leid):
@@ -224,18 +278,19 @@ class MailchimpConfig(models.Model):
         mapi = self.connect()
         # Obtener configuracion
         mailchimp_config = self.getConfiguration()
+        if not mailchimp_config:
+            return False
+        else:
+            # Obtener id de la lista
+            list_id = self.env['mailchimp.config'].getListId(
+                mapi, mailchimp_config.subscription_list)
 
-        # Obtener id de la lista
-        list_id = self.env['mailchimp.config'].getListId(
-            mapi, mailchimp_config.subscription_list)
-
-        data_clients = mapi.lists.members(list_id)
-        if 'data' in data_clients:
-            for c in data_clients['data']:
-                if leid == c['leid']:
-                    return True
-        return False
-
+            data_clients = mapi.lists.members(list_id)
+            if 'data' in data_clients:
+                for c in data_clients['data']:
+                    if leid == c['leid']:
+                        return True
+            return False
 
     # Crear un suscriptor en una lista a partir de un correo
     def createSubscriptor(self, email, vals):
@@ -244,29 +299,30 @@ class MailchimpConfig(models.Model):
 
         # Obtener configuracion
         mailchimp_config = self.getConfiguration()
-
-        # Obtener id de la lista
-        list_id = self.env['mailchimp.config'].getListId(
-            mapi, mailchimp_config.subscription_list)
-
-        # double_optin=False: para que no pida confirmacion al usuario para
-        # crear la subscripcion
-        try:
-            res = mapi.lists.subscribe(
-                list_id, {'email': email}, vals, double_optin=False,
-                update_existing=True)
-            _log.info(_('%s updated to %s in the list: %s' % (
-                {'email': email}, vals, list_id)))
-            return res
-        except mailchimp.ListAlreadySubscribedError:
-            raise exceptions.Warning(
-                _('Another subscriber already exists in this list with the '
-                  'same email.'))
-        except mailchimp.ListMergeFieldRequiredError:
-            raise exceptions.Warning(_('The email address is not valid.'))
+        if not mailchimp_config:
+            return False
         else:
-            raise exceptions.Warning(_('Unknown error.'))
+            # Obtener id de la lista
+            list_id = self.env['mailchimp.config'].getListId(
+                mapi, mailchimp_config.subscription_list)
 
+            # double_optin=False: para que no pida confirmacion al usuario para
+            # crear la subscripcion
+            try:
+                res = mapi.lists.subscribe(
+                    list_id, {'email': email}, vals, double_optin=False,
+                    update_existing=True)
+                _log.info(_('%s updated to %s in the list: %s' % (
+                    {'email': email}, vals, list_id)))
+                return res
+            except mailchimp.ListAlreadySubscribedError:
+                raise exceptions.Warning(
+                    _('Another subscriber already exists in this list with '
+                      'the same email.'))
+            except mailchimp.ListMergeFieldRequiredError:
+                raise exceptions.Warning(_('The email address is not valid.'))
+            else:
+                raise exceptions.Warning(_('Unknown error.'))
 
     # Actualizar un suscriptor en una lista a partir de leid
     def updateSubscriptor(self, leid, vals):
@@ -275,33 +331,36 @@ class MailchimpConfig(models.Model):
 
         # Obtener configuracion
         mailchimp_config = self.getConfiguration()
-
-        # Obtener id de la lista
-        list_id = self.env['mailchimp.config'].getListId(
-            mapi, mailchimp_config.subscription_list)
-
-        # double_optin=False: para que no pida confirmacion al usuario para
-        # crear la subscripcion
-        try:
-            res = mapi.lists.subscribe(
-                list_id, {'leid': leid}, vals, double_optin=False,
-                update_existing=True)
-            _log.info(_('%s updated to %s in the list: %s' % (
-                {'leid': leid}, vals, list_id)))
-            return res
-        except mailchimp.ListAlreadySubscribedError:
-            raise exceptions.Warning(
-                _('Another subscriber already exists in this list with the '
-                  'same email.'))
-        except mailchimp.ListMergeFieldRequiredError:
-            raise exceptions.Warning(_('The email address is not valid.'))
-        # Si han borrado desde mailchimp el registro, en odoo sigue existiendo
-        except mailchimp.EmailNotExistsError:
-            raise exceptions.Warning(
-                _('There is no record of an email address with leid %s on '
-                  'that list.' % leid))
+        if not mailchimp_config:
+            return False
         else:
-            raise exceptions.Warning(_('Unknown error.'))
+            # Obtener id de la lista
+            list_id = self.env['mailchimp.config'].getListId(
+                mapi, mailchimp_config.subscription_list)
+
+            # double_optin=False: para que no pida confirmacion al usuario para
+            # crear la subscripcion
+            try:
+                res = mapi.lists.subscribe(
+                    list_id, {'leid': leid}, vals, double_optin=False,
+                    update_existing=True)
+                _log.info(_('%s updated to %s in the list: %s' % (
+                    {'leid': leid}, vals, list_id)))
+                return res
+            except mailchimp.ListAlreadySubscribedError:
+                raise exceptions.Warning(
+                    _('Another subscriber already exists in this list with '
+                      'the same email.'))
+            except mailchimp.ListMergeFieldRequiredError:
+                raise exceptions.Warning(_('The email address is not valid.'))
+            # Si han borrado desde mailchimp el registro, en odoo sigue
+            # existiendo
+            except mailchimp.EmailNotExistsError:
+                raise exceptions.Warning(
+                    _('There is no record of an email address with leid %s on '
+                      'that list.' % leid))
+            else:
+                raise exceptions.Warning(_('Unknown error.'))
 
     # Eliminar un suscriptor en una lista a partir de leid
     def deleteSubscriptor(self, leid):
@@ -310,24 +369,26 @@ class MailchimpConfig(models.Model):
 
         # Obtener configuracion
         mailchimp_config = self.getConfiguration()
-
-        # Obtener id de la lista
-        list_id = self.env['mailchimp.config'].getListId(
-            mapi, mailchimp_config.subscription_list)
-
-        # delete_member=True Para que lo elimine
-        # send_goodbye=False Para que no envie correo de despedida
-        # send_notify=False Para que no envie correo de notificacion
-        try:
-            res = mapi.lists.unsubscribe(
-                list_id, {'leid': leid}, delete_member=True,
-                send_goodbye=False, send_notify=False)
-            _log.info(_('%s deleted in the list %s' % (
-                {'leid': leid}, list_id)))
-            return res
-        except mailchimp.EmailNotExistsError:
-            _log.warn(
-                _('The leid %s is not suscribed in the list, it can not '
-                  'eliminated.' % {'leid': leid}))
+        if not mailchimp_config:
+            return False
         else:
-            raise exceptions.Warning(_('Unknown error.'))
+            # Obtener id de la lista
+            list_id = self.env['mailchimp.config'].getListId(
+                mapi, mailchimp_config.subscription_list)
+
+            # delete_member=True Para que lo elimine
+            # send_goodbye=False Para que no envie correo de despedida
+            # send_notify=False Para que no envie correo de notificacion
+            try:
+                res = mapi.lists.unsubscribe(
+                    list_id, {'leid': leid}, delete_member=True,
+                    send_goodbye=False, send_notify=False)
+                _log.info(_('%s deleted in the list %s' % (
+                    {'leid': leid}, list_id)))
+                return res
+            except mailchimp.EmailNotExistsError:
+                _log.warn(
+                    _('The leid %s is not suscribed in the list, it can not '
+                      'eliminated.' % {'leid': leid}))
+            else:
+                raise exceptions.Warning(_('Unknown error.'))
