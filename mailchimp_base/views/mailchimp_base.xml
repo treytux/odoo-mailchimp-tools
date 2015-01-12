@@ -45,7 +45,7 @@
                             <separator string="Connection data" colspan="6"/>
                             <field name="mapi" colspan="6"/>
                             <field name="subscription_list" readonly="1" colspan="2"/>
-                            <button name="buttonChangeList" string="Change list" type="object" icon="gtk-find"/>
+                            <button name="buttonChangeList" string="Select list" type="object" icon="gtk-find"/>
                         </group>
                         <group col="4" colspan="4">
                             <button name="testConnect" string="Test connection" type="object" icon="gtk-network" colspan="2"/>
