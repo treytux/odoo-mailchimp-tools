@@ -55,7 +55,7 @@ class Partner(models.Model):
                 partner.mailchimp_id = res['leid']
         return partner
 
-    @api.multi
+    @api.one
     def write(self, vals):
         # Almacenar el correo antes de guardar por si lo borran
         old_email = self.email

@@ -285,6 +285,11 @@ class MailchimpConfig(models.Model):
             list_id = self.env['mailchimp.config'].getListId(
                 mapi, mailchimp_config.subscription_list)
 
+            try:
+                leid = int(leid)
+            except:
+                leid = leid
+
             data_clients = mapi.lists.members(list_id)
             if 'data' in data_clients:
                 for c in data_clients['data']:
@@ -315,14 +320,12 @@ class MailchimpConfig(models.Model):
                 _log.info(_('%s updated to %s in the list: %s' % (
                     {'email': email}, vals, list_id)))
                 return res
-            except mailchimp.ListAlreadySubscribedError:
+            except Exception as e:
+                _log.info('*'*100)
+                _log.info('createSubscriptor')
                 raise exceptions.Warning(
-                    _('Another subscriber already exists in this list with '
-                      'the same email.'))
-            except mailchimp.ListMergeFieldRequiredError:
-                raise exceptions.Warning(_('The email address is not valid.'))
-            else:
-                raise exceptions.Warning(_('Unknown error.'))
+                    _('Mailchimp error in partner with email: \'%s\'.\n'
+                      '%s' % (email, e)))
 
     # Actualizar un suscriptor en una lista a partir de leid
     def updateSubscriptor(self, leid, vals):
@@ -347,20 +350,10 @@ class MailchimpConfig(models.Model):
                 _log.info(_('%s updated to %s in the list: %s' % (
                     {'leid': leid}, vals, list_id)))
                 return res
-            except mailchimp.ListAlreadySubscribedError:
+            except Exception as e:
                 raise exceptions.Warning(
-                    _('Another subscriber already exists in this list with '
-                      'the same email.'))
-            except mailchimp.ListMergeFieldRequiredError:
-                raise exceptions.Warning(_('The email address is not valid.'))
-            # Si han borrado desde mailchimp el registro, en odoo sigue
-            # existiendo
-            except mailchimp.EmailNotExistsError:
-                raise exceptions.Warning(
-                    _('There is no record of an email address with leid %s on '
-                      'that list.' % leid))
-            else:
-                raise exceptions.Warning(_('Unknown error.'))
+                    _('Mailchimp error in partner with vals: \'%s\'.\n'
+                      '%s' % (vals, e)))
 
     # Eliminar un suscriptor en una lista a partir de leid
     def deleteSubscriptor(self, leid):
@@ -386,9 +379,7 @@ class MailchimpConfig(models.Model):
                 _log.info(_('%s deleted in the list %s' % (
                     {'leid': leid}, list_id)))
                 return res
-            except mailchimp.EmailNotExistsError:
-                _log.warn(
-                    _('The leid %s is not suscribed in the list, it can not '
-                      'eliminated.' % {'leid': leid}))
-            else:
-                raise exceptions.Warning(_('Unknown error.'))
+            except Exception as e:
+                raise exceptions.Warning(
+                    _('Mailchimp error in partner.\n'
+                      '%s' % e))
