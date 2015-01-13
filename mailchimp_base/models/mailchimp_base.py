@@ -321,8 +321,6 @@ class MailchimpConfig(models.Model):
                     {'email': email}, vals, list_id)))
                 return res
             except Exception as e:
-                _log.info('*'*100)
-                _log.info('createSubscriptor')
                 raise exceptions.Warning(
                     _('Mailchimp error in partner with email: \'%s\'.\n'
                       '%s' % (email, e)))
