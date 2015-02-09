@@ -18,7 +18,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-from openerp import models, fields, api, _
+from openerp import models, fields, api
 import logging
 _log = logging.getLogger(__name__)
 
@@ -113,6 +113,9 @@ class Partner(models.Model):
         delete_subs = False
         mailch_obj = self.env['mailchimp.config']
 
+        # Guardar el id antes de eliminar el registro
+        old_mailchimp_id = self.mailchimp_id
+
         # Comprobar si hay que exportar los datos
         if mailch_obj.checkExportData(self):
             delete_subs = True
@@ -125,5 +128,5 @@ class Partner(models.Model):
         # por alguna razon, no eliminamos el subcriptor
         if delete_subs:
             # Eliminar suscriptor
-            mailch_obj.deleteSubscriptor(self.email)
+            mailch_obj.deleteSubscriptor(old_mailchimp_id)
         return res

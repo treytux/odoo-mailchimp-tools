@@ -18,11 +18,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ###############################################################################
-from openerp import models, fields, api, _, exceptions
-import mailchimp
-
-import logging
-_log = logging.getLogger(__name__)
+from openerp import models, fields
 
 
 class MailchimpConfig(models.Model):
