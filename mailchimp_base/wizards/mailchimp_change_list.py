@@ -1,23 +1,7 @@
 # -*- coding: utf-8 -*-
-###############################################################################
-#
-#    Trey, Kilobytes de Soluciones
-#    Copyright (C) 2014-Today Trey, Kilobytes de Soluciones <www.trey.es>
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-###############################################################################
+# License, author and contributors information in:
+# __openerp__.py file at the root folder of this module.
+
 from openerp import models, fields, api, _, exceptions
 import mailchimp
 
@@ -34,7 +18,8 @@ class MailchimpChangeList(models.TransientModel):
     subscription_list_id = fields.Many2one(
         comodel_name='mailchimp.list',
         string='Subscription list',
-        help="Available lists MailChimp API.")
+        help="Available lists MailChimp API."
+    )
 
     # Cargar listas de suscripcion disponibles
     def actionGetLists(self):
@@ -64,12 +49,15 @@ class MailchimpChangeList(models.TransientModel):
                     }
                     self.env['mailchimp.list'].create(data)
             except:
-                raise exceptions.Warning(_('Data error Mailchimp connection.'))
+                raise exceptions.Warning(
+                    _('Data error Mailchimp connection.')
+                )
 
         else:
-            raise exceptions.Warning(_(
-                'Not exists configuration of Mailchimp in the system.\n'
-                'Make sure you have saved the settings.'))
+            raise exceptions.Warning(
+                _('Not exists configuration of Mailchimp in the system. '
+                  'Make sure you have saved the settings.')
+            )
 
     # Escribir la lista seleccionada en el campo lista de suscripcion de la
     # configuracion
@@ -83,6 +71,7 @@ class MailchimpChangeList(models.TransientModel):
         else:
             raise exceptions.Warning(_(
                 'Not exists configuration of Mailchimp in the system.\n'
-                'Make sure you have saved the settings.'))
+                'Make sure you have saved the settings.')
+            )
 
         return {'type': 'ir.actions.act_window_close'}

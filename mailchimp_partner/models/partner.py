@@ -1,23 +1,7 @@
 # -*- coding: utf-8 -*-
-###############################################################################
-#
-#    Trey, Kilobytes de Soluciones
-#    Copyright (C) 2014-Today Trey, Kilobytes de Soluciones <www.trey.es>
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-###############################################################################
+# License, author and contributors information in:
+# __openerp__.py file at the root folder of this module.
+
 from openerp import models, fields, api
 import logging
 _log = logging.getLogger(__name__)
@@ -29,7 +13,8 @@ class Partner(models.Model):
     mailchimp_id = fields.Char(
         string='Mailchimp Identificator',
         readonly=True,
-        help="Unique identificator (leid)")
+        help="Unique identificator (leid)"
+    )
 
     @api.model
     def create(self, data):
@@ -47,10 +32,8 @@ class Partner(models.Model):
                 # Obtener los valores de las lineas de mapeo de la config
                 vals = {m.field_mailchimp: data.get(m.field_odoo, '')
                         for m in mailchimp_config.map_line_ids}
-
                 # Crear el suscriptor
                 res = mailch_obj.createSubscriptor(data['email'], vals)
-
                 # Guardar el id del registro creado en mailchimp
                 partner.mailchimp_id = res['leid']
         return partner
@@ -59,11 +42,9 @@ class Partner(models.Model):
     def write(self, vals):
         # Almacenar el correo antes de guardar por si lo borran
         old_email = self.email
-
         res = super(Partner, self).write(vals)
         if not res:
             return res
-
         mailch_obj = self.env['mailchimp.config']
         mailchimp_config = mailch_obj.getConfiguration()
         if not mailchimp_config:

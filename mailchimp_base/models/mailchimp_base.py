@@ -1,23 +1,7 @@
 # -*- coding: utf-8 -*-
-###############################################################################
+# License, author and contributors information in:
+# __openerp__.py file at the root folder of this module.
 #
-#    Trey, Kilobytes de Soluciones
-#    Copyright (C) 2014-Today Trey, Kilobytes de Soluciones <www.trey.es>
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-###############################################################################
 from openerp import models, fields, api, _, exceptions
 import mailchimp
 
@@ -29,33 +13,50 @@ class MailchimpList(models.Model):
     _name = 'mailchimp.list'
     _description = 'Mailchimp list'
 
-    name = fields.Char(string='Name')
+    name = fields.Char(
+        string='Name'
+    )
 
 
 class MailchimpMapLine(models.Model):
     _name = 'mailchimp.map.line'
     _description = 'Mailchimp map line'
 
-    name = fields.Char(string='Name')
+    name = fields.Char(
+        string='Name'
+    )
     config_id = fields.Many2one(
         comodel_name='mailchimp.config',
-        string='Configuration')
-    field_odoo = fields.Char(string='Field Odoo')
-    field_mailchimp = fields.Char(string='Field MailChimp')
+        string='Configuration'
+    )
+    field_odoo = fields.Char(
+        string='Field Odoo'
+    )
+    field_mailchimp = fields.Char(
+        string='Field MailChimp'
+    )
 
 
 class MailchimpConfig(models.Model):
     _name = 'mailchimp.config'
     _description = 'Mailchimp configuration'
 
-    name = fields.Char(string='Name')
-    mapi = fields.Char(string='API', required=True)
-    subscription_list = fields.Char(string='Subscription List')
+    name = fields.Char(
+        string='Name'
+    )
+    mapi = fields.Char(
+        string='API',
+        required=True
+    )
+    subscription_list = fields.Char(
+        string='Subscription List'
+    )
     map_line_ids = fields.One2many(
         comodel_name='mailchimp.map.line',
         inverse_name='config_id',
         string='Map lines',
-        required=True)
+        required=True
+    )
 
     # Abre el asistente para seleccionar una de las listas de suscripcion
     # disponibles
@@ -84,7 +85,8 @@ class MailchimpConfig(models.Model):
         if not mailchimp_config:
             raise exceptions.Warning(
                 _('You must define a configuration for your Mailchimp '
-                  'account.'))
+                  'account.')
+            )
         else:
             if len(mailchimp_config) > 0:
                 subscription_list_name = mailchimp_config.subscription_list
@@ -95,7 +97,8 @@ class MailchimpConfig(models.Model):
                     raise exceptions.Warning(
                         _('Data error Mailchimp connection, review the '
                           'configuration in Configuration/Mailchimp/Mailchimp '
-                          'configuration menu.'))
+                          'configuration menu.')
+                    )
 
                 # Inicializar por si no la encuentra
                 list_id = 0
@@ -107,7 +110,8 @@ class MailchimpConfig(models.Model):
                 if list_id == 0:
                     raise exceptions.Warning(
                         _('The list \'%s\' does not exist in Mailchimp.' %
-                            (subscription_list_name)))
+                            (subscription_list_name))
+                    )
                 return list_id
 
     # Comprueba si conecta o no
@@ -126,7 +130,8 @@ class MailchimpConfig(models.Model):
         res = self.isConnected()
         if res:
             raise exceptions.Warning(
-                _('The connection was made successfully.'))
+                _('The connection was made successfully.')
+            )
         return True
 
     @api.model
@@ -135,7 +140,8 @@ class MailchimpConfig(models.Model):
         if len(self.env['mailchimp.config'].search([])) >= 1:
             raise exceptions.Warning(
                 _('There can be only one configuration of Mailchimp in the '
-                    'system.'))
+                    'system.')
+            )
 
         return super(MailchimpConfig, self).create(data)
 
@@ -162,7 +168,8 @@ class MailchimpConfig(models.Model):
             raise exceptions.Warning(
                 _('Data error Mailchimp connection, review the '
                   'configuration in Configuration/Mailchimp/Mailchimp '
-                  'configuration menu.'))
+                  'configuration menu.')
+            )
 
         # Inicializar por si no la encuentra
         list_id = 0
@@ -178,7 +185,8 @@ class MailchimpConfig(models.Model):
         if list_id == 0:
             raise exceptions.Warning(
                 _('The list \'%s\' does not exist in Mailchimp.' %
-                    (subscription_list_name)))
+                    (subscription_list_name))
+            )
         return res
 
     ########################################################################
@@ -192,7 +200,8 @@ class MailchimpConfig(models.Model):
             raise exceptions.Warning(
                 _('Data error Mailchimp connection, review the '
                   'configuration in Configuration/Mailchimp/Mailchimp '
-                  'configuration menu.'))
+                  'configuration menu.')
+            )
 
     # Comprueba si la lista existe
     def existsList(self, mapi, list_name):
@@ -216,7 +225,8 @@ class MailchimpConfig(models.Model):
         if not mailchimp_configs:
             _log.warning(
                 _('Not exists configuration of Mailchimp in the system.\n'
-                  'Make sure you have saved the settings.'))
+                  'Make sure you have saved the settings.')
+            )
             return False
         return mailchimp_configs[0]
 
@@ -234,7 +244,8 @@ class MailchimpConfig(models.Model):
                 raise exceptions.Warning(
                     _('Data error Mailchimp connection, review the '
                       'configuration in Configuration/Mailchimp/Mailchimp '
-                      'configuration menu.'))
+                      'configuration menu.')
+                )
 
             return mapi
 
@@ -380,4 +391,5 @@ class MailchimpConfig(models.Model):
             except Exception as e:
                 raise exceptions.Warning(
                     _('Mailchimp error in partner.\n'
-                      '%s' % e))
+                      '%s' % e)
+                )
