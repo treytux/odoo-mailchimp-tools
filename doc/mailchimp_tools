@@ -1,0 +1,21 @@
+
+== MAILCHIMP_TOOLS ==
+
+Características:
+================
+Exporta los datos de las empresas desde Odoo a una lista de suscriptores de Mailchimp (no es bidireccional, es decir, los cambios que se hagan directamente desde Mailchimp, no se verán reflejados en odoo).
+Realiza operaciones de creación, modificación y eliminación de suscriptores.
+
+
+Configuración:
+==============
+Es necesario rellenar los siguientes datos:
+    - API de Mailchimp.
+    - Lista de suscripción.
+    - Seleccionar los tipos de empresas que se desean exportar a Mailchimp (clientes, proveedores, contactos de clientes y/o contactos de proveedores).
+    - Mapeo de campos: indicar, para cada campo de odoo, el nombre del campo relacionado en Mailchimp para que conozca la relación entre ellos y pueda exportarlos.
+
+
+Posibles mejoras:
+=================
+- Permitir gestionar varias listas de suscripciones (actualmente sólo soporta una configuración y una lista de suscripción).
